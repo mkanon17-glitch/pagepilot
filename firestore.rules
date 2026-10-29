@@ -1,0 +1,160 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['id', 'email', 'timezone', 'weekStartDay', 'onboardingCompleted']) &&
+             data.keys().hasOnly(['id', 'email', 'displayName', 'photoURL', 'timezone', 'weekStartDay', 'theme', 'onboardingCompleted', 'createdAt', 'updatedAt']) &&
+             data.id is string && data.id == request.auth.uid &&
+             data.email is string && data.email.size() <= 200 &&
+             data.timezone is string && data.timezone.size() <= 100 &&
+             data.weekStartDay is number && (data.weekStartDay == 0 || data.weekStartDay == 1 || data.weekStartDay == 6) &&
+             data.onboardingCompleted is bool &&
+             (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 150)) &&
+             (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 1000)) &&
+             (!('theme' in data) || (data.theme in ['light', 'dark', 'system']));
+    }
+
+    function isValidPage(data, userId) {
+      return data.keys().hasAll(['id', 'userId', 'name', 'platforms', 'active']) &&
+             data.keys().hasOnly(['id', 'userId', 'name', 'category', 'color', 'platforms', 'active', 'createdAt', 'updatedAt']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.userId is string && data.userId == userId &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.platforms is list && data.platforms.size() <= 20 &&
+             data.active is bool &&
+             (!('category' in data) || (data.category is string && data.category.size() <= 60)) &&
+             (!('color' in data) || (data.color is string && data.color.size() <= 30));
+    }
+
+    function isValidTask(data, userId) {
+      return data.keys().hasAll(['id', 'userId', 'title', 'taskType', 'targetDate', 'completed']) &&
+             data.keys().hasOnly(['id', 'userId', 'title', 'pageId', 'pageName', 'platform', 'taskType', 'targetDate', 'completed', 'completedAt', 'notes', 'priority', 'error', 'reminderTime', 'repeatOption', 'customRepeatDays', 'reminderOffset', 'createdAt', 'updatedAt']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.userId is string && data.userId == userId &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
+             data.taskType in ['daily', 'one_time'] &&
+             data.targetDate is string && data.targetDate.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') &&
+             data.completed is bool &&
+             (!('pageId' in data) || (data.pageId is string && data.pageId.size() <= 128)) &&
+             (!('pageName' in data) || (data.pageName is string && data.pageName.size() <= 100)) &&
+             (!('platform' in data) || (data.platform is string && data.platform.size() <= 50)) &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() <= 2000)) &&
+             (!('priority' in data) || (data.priority in ['low', 'medium', 'high'])) &&
+             (!('error' in data) || (data.error is string && data.error.size() <= 500)) &&
+             (!('reminderTime' in data) || (data.reminderTime is string && data.reminderTime.size() <= 10)) &&
+             (!('repeatOption' in data) || (data.repeatOption in ['none', 'daily', 'weekly', 'monthly', 'custom'])) &&
+             (!('customRepeatDays' in data) || (data.customRepeatDays is list && data.customRepeatDays.size() <= 7)) &&
+             (!('reminderOffset' in data) || (data.reminderOffset in ['at_time', '5_min', '15_min', '30_min', '1_hour', '1_day']));
+    }
+
+    function isValidAccount(data, userId) {
+      return data.keys().hasAll(['id', 'userId', 'platform', 'accountType', 'name', 'pageId', 'status']) &&
+             data.keys().hasOnly(['id', 'userId', 'platform', 'accountType', 'name', 'pageId', 'instagramId', 'pictureUrl', 'status', 'connectedAt', 'updatedAt']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.userId is string && data.userId == userId &&
+             data.platform in ['facebook', 'instagram'] &&
+             data.accountType in ['facebook_page', 'instagram_business'] &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.pageId is string && data.pageId.size() <= 128 &&
+             data.status in ['active', 'expired'] &&
+             (!('instagramId' in data) || (data.instagramId is string && data.instagramId.size() <= 128)) &&
+             (!('pictureUrl' in data) || (data.pictureUrl is string && data.pictureUrl.size() <= 1000));
+    }
+
+    function isValidPost(data, userId) {
+      return data.keys().hasAll(['id', 'userId', 'caption', 'targetAccountIds', 'status']) &&
+             data.keys().hasOnly(['id', 'userId', 'caption', 'mediaUrl', 'mediaType', 'targetAccountIds', 'status', 'scheduledFor', 'publishedAt', 'error', 'matchingTaskId', 'createdAt', 'updatedAt']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.userId is string && data.userId == userId &&
+             data.caption is string && data.caption.size() <= 5000 &&
+             data.targetAccountIds is list && data.targetAccountIds.size() <= 20 &&
+             data.status in ['draft', 'scheduled', 'published', 'failed'] &&
+             (!('mediaUrl' in data) || (data.mediaUrl is string && data.mediaUrl.size() <= 1000)) &&
+             (!('mediaType' in data) || (data.mediaType in ['image', 'video', 'none'])) &&
+             (!('scheduledFor' in data) || (data.scheduledFor is string && data.scheduledFor.size() <= 50)) &&
+             (!('publishedAt' in data) || (data.publishedAt is string && data.publishedAt.size() <= 50)) &&
+             (!('error' in data) || (data.error is string && data.error.size() <= 1000)) &&
+             (!('matchingTaskId' in data) || (data.matchingTaskId is string && data.matchingTaskId.size() <= 128));
+    }
+
+    // User Profile & Settings
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false; // Users cannot be listed en masse
+      allow create: if isOwner(userId) && isValidId(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data) &&
+                    request.resource.data.id == resource.data.id;
+      allow delete: if isOwner(userId);
+
+      // Subcollection: Pages / Brands
+      match /pages/{pageId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(pageId) && isValidPage(request.resource.data, userId);
+        allow update: if isOwner(userId) && isValidPage(request.resource.data, userId) &&
+                      request.resource.data.id == resource.data.id &&
+                      request.resource.data.userId == resource.data.userId;
+        allow delete: if isOwner(userId);
+      }
+
+      // Subcollection: Creator Tasks
+      match /tasks/{taskId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(taskId) && isValidTask(request.resource.data, userId);
+        allow update: if isOwner(userId) && isValidTask(request.resource.data, userId) &&
+                      request.resource.data.id == resource.data.id &&
+                      request.resource.data.userId == resource.data.userId;
+        allow delete: if isOwner(userId);
+      }
+
+      // Subcollection: Connected Accounts (Facebook & Instagram - strictly user owned, no tokens exposed)
+      match /accounts/{accountId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(accountId) && isValidAccount(request.resource.data, userId);
+        allow update: if isOwner(userId) && isValidAccount(request.resource.data, userId) &&
+                      request.resource.data.id == resource.data.id &&
+                      request.resource.data.userId == resource.data.userId;
+        allow delete: if isOwner(userId);
+      }
+
+      // Subcollection: Creator Posts (Created, Scheduled, Published)
+      match /posts/{postId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(postId) && isValidPost(request.resource.data, userId);
+        allow update: if isOwner(userId) && isValidPost(request.resource.data, userId) &&
+                      request.resource.data.id == resource.data.id &&
+                      request.resource.data.userId == resource.data.userId;
+        allow delete: if isOwner(userId);
+      }
+
+      // Server-only access tokens storage - client access is strictly denied
+      match /account_tokens/{docId} {
+        allow read, write: if false;
+      }
+    }
+
+    // Connectivity test probe
+    match /test/connection {
+      allow read: if true;
+    }
+  }
+}

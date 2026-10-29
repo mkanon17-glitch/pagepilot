@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <script>
+      // Runtime constraint: HMR is disabled in AI Studio dev environment. Ignore WebSocket errors.
+      (function () {
+        var origError = console.error;
+        console.error = function () {
+          var args = Array.prototype.slice.call(arguments);
+          var text = args.map(function (a) { return (a && a.stack) ? a.stack : String(a); }).join(' ');
+          if (text.indexOf('WebSocket') !== -1 || (text.indexOf('vite') !== -1 && text.indexOf('connect') !== -1)) {
+            return;
+          }
+          origError.apply(console, args);
+        };
+        window.addEventListener('unhandledrejection', function (e) {
+          var msg = e.reason && (e.reason.message || String(e.reason));
+          if (msg && (msg.indexOf('WebSocket') !== -1 || msg.indexOf('vite:ws') !== -1)) {
+            e.preventDefault();
+          }
+        });
+      })();
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PagePilot — Social Media Creator Task Planner</title>
+    <meta name="description" content="Task planner web app for social media creators and page owners with multi-platform scheduling and calendar tracking." />
+    <meta property="og:title" content="PagePilot — Social Media Creator Task Planner" />
+    <meta property="og:description" content="Task planner web app for social media creators and page owners with multi-platform scheduling and calendar tracking." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      // Ignore WebSocket rejections since HMR is disabled in AI Studio dev environment
+      window.addEventListener('unhandledrejection', function (e) {
+        var msg = e.reason && (e.reason.message || String(e.reason));
+        if (msg && (msg.indexOf('WebSocket') !== -1 || msg.indexOf('vite:ws') !== -1)) {
+          e.preventDefault();
+        }
+      });
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

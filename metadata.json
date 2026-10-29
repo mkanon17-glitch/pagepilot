@@ -1,0 +1,6 @@
+{
+  "name": "PagePilot",
+  "description": "Task planner web app for social media creators and page owners with multi-platform scheduling and calendar tracking.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

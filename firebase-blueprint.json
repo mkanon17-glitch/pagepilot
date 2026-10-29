@@ -1,0 +1,131 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and configuration settings for PagePilot",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique user ID matching auth.uid" },
+        "email": { "type": "string", "description": "User's Google account email" },
+        "displayName": { "type": "string", "description": "Display name of the user" },
+        "photoURL": { "type": "string", "description": "Profile picture URL" },
+        "timezone": { "type": "string", "description": "User's timezone name, e.g. America/New_York" },
+        "weekStartDay": { "type": "number", "description": "0 for Sunday, 1 for Monday, 6 for Saturday" },
+        "theme": { "type": "string", "enum": ["light", "dark", "system"], "description": "Color theme preference" },
+        "onboardingCompleted": { "type": "boolean", "description": "Whether user completed initial page setup" },
+        "createdAt": { "type": "string", "description": "ISO timestamp of account creation" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp of last update" }
+      },
+      "required": ["id", "email", "timezone", "weekStartDay", "onboardingCompleted"]
+    },
+    "Page": {
+      "title": "Page",
+      "description": "Social media page, channel, or brand managed by the user",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique page ID" },
+        "userId": { "type": "string", "description": "Owner user ID" },
+        "name": { "type": "string", "description": "Brand or page name", "maxLength": 100 },
+        "category": { "type": "string", "description": "Optional niche or topic", "maxLength": 60 },
+        "color": { "type": "string", "description": "Color theme accent for badge", "maxLength": 30 },
+        "platforms": {
+          "type": "array",
+          "description": "Selected social media platforms: facebook, instagram, tiktok, youtube, x, linkedin, threads"
+        },
+        "active": { "type": "boolean", "description": "Whether daily task generation is active for this page" },
+        "createdAt": { "type": "string", "description": "Creation timestamp" },
+        "updatedAt": { "type": "string", "description": "Last update timestamp" }
+      },
+      "required": ["id", "userId", "name", "platforms", "active"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "A scheduled or daily creator task tied to a specific date",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique task ID" },
+        "userId": { "type": "string", "description": "Owner user ID" },
+        "title": { "type": "string", "description": "Task title, e.g., Brand - Instagram post", "maxLength": 200 },
+        "pageId": { "type": "string", "description": "Associated page ID (optional for standalone tasks)", "maxLength": 128 },
+        "pageName": { "type": "string", "description": "Name of the brand or page", "maxLength": 100 },
+        "platform": { "type": "string", "description": "Target platform name (facebook, instagram, tiktok, youtube, x, linkedin, threads, custom)" },
+        "taskType": { "type": "string", "enum": ["daily", "one_time"], "description": "Recurrence type" },
+        "targetDate": { "type": "string", "description": "Date formatted as YYYY-MM-DD", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+        "completed": { "type": "boolean", "description": "Completion state" },
+        "completedAt": { "type": "string", "description": "Completion timestamp ISO or null" },
+        "notes": { "type": "string", "description": "Optional caption draft, post link, or creative notes", "maxLength": 2000 },
+        "priority": { "type": "string", "enum": ["low", "medium", "high"], "description": "Priority tier" },
+        "error": { "type": "string", "description": "Publishing error message if post failed", "maxLength": 500 },
+        "reminderTime": { "type": "string", "description": "Time of reminder in HH:mm 24hr format", "maxLength": 10 },
+        "repeatOption": { "type": "string", "enum": ["none", "daily", "weekly", "monthly", "custom"], "description": "Recurrence option" },
+        "customRepeatDays": { "type": "array", "description": "Days of week for custom repeat: 0=Sun..6=Sat" },
+        "reminderOffset": { "type": "string", "enum": ["at_time", "5_min", "15_min", "30_min", "1_hour", "1_day"], "description": "Offset before task time" },
+        "createdAt": { "type": "string", "description": "Creation timestamp" },
+        "updatedAt": { "type": "string", "description": "Last update timestamp" }
+      },
+      "required": ["id", "userId", "title", "taskType", "targetDate", "completed"]
+    },
+    "ConnectedAccount": {
+      "title": "ConnectedAccount",
+      "description": "Connected Facebook Page or Instagram professional account (access tokens stored server-side only)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique account ID" },
+        "userId": { "type": "string", "description": "Owner user ID" },
+        "platform": { "type": "string", "enum": ["facebook", "instagram"] },
+        "accountType": { "type": "string", "enum": ["facebook_page", "instagram_business"] },
+        "name": { "type": "string", "description": "Page or Instagram username/name", "maxLength": 100 },
+        "pageId": { "type": "string", "description": "Facebook Page ID", "maxLength": 128 },
+        "instagramId": { "type": "string", "description": "Instagram Business Account ID", "maxLength": 128 },
+        "pictureUrl": { "type": "string", "description": "Profile picture URL", "maxLength": 1000 },
+        "status": { "type": "string", "enum": ["active", "expired"] },
+        "connectedAt": { "type": "string", "description": "ISO timestamp of connection" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp of update" }
+      },
+      "required": ["id", "userId", "platform", "accountType", "name", "pageId", "status"]
+    },
+    "Post": {
+      "title": "Post",
+      "description": "Post scheduled or published to connected accounts",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique post ID" },
+        "userId": { "type": "string", "description": "Owner user ID" },
+        "caption": { "type": "string", "description": "Post caption copy", "maxLength": 5000 },
+        "mediaUrl": { "type": "string", "description": "URL of image or video hosted on Firebase Storage or server", "maxLength": 1000 },
+        "mediaType": { "type": "string", "enum": ["image", "video", "none"] },
+        "targetAccountIds": { "type": "array", "description": "IDs of connected accounts to publish to" },
+        "status": { "type": "string", "enum": ["draft", "scheduled", "published", "failed"] },
+        "scheduledFor": { "type": "string", "description": "ISO timestamp when post should be published" },
+        "publishedAt": { "type": "string", "description": "ISO timestamp of publication" },
+        "error": { "type": "string", "description": "Error details if publication failed", "maxLength": 1000 },
+        "matchingTaskId": { "type": "string", "description": "Associated task ID to mark completed", "maxLength": 128 },
+        "createdAt": { "type": "string", "description": "Creation timestamp" },
+        "updatedAt": { "type": "string", "description": "Last update timestamp" }
+      },
+      "required": ["id", "userId", "caption", "targetAccountIds", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User settings, preferences, and onboarding status"
+    },
+    "/users/{userId}/pages/{pageId}": {
+      "schema": "Page",
+      "description": "Social media pages and brand configurations owned by user"
+    },
+    "/users/{userId}/tasks/{taskId}": {
+      "schema": "Task",
+      "description": "Planner tasks for specific dates owned by user"
+    },
+    "/users/{userId}/accounts/{accountId}": {
+      "schema": "ConnectedAccount",
+      "description": "Connected Facebook and Instagram accounts owned by user"
+    },
+    "/users/{userId}/posts/{postId}": {
+      "schema": "Post",
+      "description": "Posts created, scheduled, or published by user"
+    }
+  }
+}
